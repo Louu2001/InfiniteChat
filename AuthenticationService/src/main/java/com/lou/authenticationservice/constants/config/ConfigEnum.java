@@ -21,4 +21,13 @@ public enum ConfigEnum {
         this.text = text;
         this.value = value;
     }
+
+    public String getText() {
+        return text;
+    }
+
+
+    public String getValue() {
+        return value;
+    }
 }

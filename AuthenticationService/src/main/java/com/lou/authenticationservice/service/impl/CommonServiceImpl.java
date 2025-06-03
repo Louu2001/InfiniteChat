@@ -37,11 +37,14 @@ public class CommonServiceImpl implements CommonService {
         return new SMSResponse();
     }
 
-//    // service
+
+
+    // service
 //    @Override
 //    public void sendMail(String tagerMail) {
 //        String code = new RandomCodeUtil().getRandomCode();
 //        new SendMailUtil().sendEmailCode(tagerMail, code);
 //        stringRedisTemplate.opsForValue().set(tagerMail, code, SMSConstant.SMS_EXPIRE_TIME, TimeUnit.MINUTES);
 //    }
+
 }

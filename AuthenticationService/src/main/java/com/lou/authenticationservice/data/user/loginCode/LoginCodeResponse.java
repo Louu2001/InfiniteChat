@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class LoginCodeResponse {
-    private String userId;
+    private Long userId;
     private String userName;
     private String avatar;
     private String signature;

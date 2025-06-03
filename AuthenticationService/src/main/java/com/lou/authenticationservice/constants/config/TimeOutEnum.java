@@ -4,15 +4,24 @@ import lombok.Getter;
 
 @Getter
 public enum TimeOutEnum {
-    JWT_TIME_OUT("token time out(day)", "jwt", 24);
-    private final String name;
-    private final String prefix;
+    TOKEN_TIME_OUT("token time out(day)",500000),
+    JWT_TIME_OUT("token time out(day)",500000),
+    CODE_TIME_OUT("code time out(minute)",500000);
 
-    private final int timeOut;
+    private String name;
 
-    TimeOutEnum(String name, String prefix, int timeOut) {
+    private int timeOut;
+
+    TimeOutEnum(String name, int timeOut) {
         this.name = name;
-        this.prefix = prefix;
         this.timeOut = timeOut;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public int getTimeOut() {
+        return timeOut;
     }
 }

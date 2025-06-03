@@ -29,8 +29,9 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .setSubject(userID)
-                .setIssuedAt(new Date()).setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.ES512, ConfigEnum.TOKEN_SECRET_KEY.getText())
+                .setIssuedAt(new Date())
+                .setExpiration(expiryDate)
+                .signWith(SignatureAlgorithm.HS512, ConfigEnum.TOKEN_SECRET_KEY.getText())
                 .compact();
     }
 
