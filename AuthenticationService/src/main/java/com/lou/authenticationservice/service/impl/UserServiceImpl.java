@@ -11,6 +11,8 @@ import com.lou.authenticationservice.data.user.loginCode.LoginCodeRequest;
 import com.lou.authenticationservice.data.user.loginCode.LoginCodeResponse;
 import com.lou.authenticationservice.data.user.register.RegisterRequest;
 import com.lou.authenticationservice.data.user.register.RegisterResponse;
+import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarRequest;
+import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarResponse;
 import com.lou.authenticationservice.exception.CodeException;
 import com.lou.authenticationservice.exception.DatabaseException;
 import com.lou.authenticationservice.exception.UserException;
@@ -120,6 +122,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String token = JwtUtil.generate(String.valueOf(response.getUserId()));
         response.setToken(token);
         return response;
+    }
+
+    @Override
+    public UpdateAvatarResponse updateAvatar(String id, UpdateAvatarRequest request) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_id",Long.valueOf(id));
+        User user = this.getOnly(queryWrapper,true);
+
+        if (user == null){
+            throw new UserException(ErrorEnum.NO_USER_ERROR);
+        }
+
+        user.setAvatar(request.avatarUrl);
+        boolean isUpdate = this.updateById(user);
+        if (!isUpdate){
+            throw new DatabaseException(ErrorEnum.UPDATE_AVATAR_ERROR);
+        }
+
+        UpdateAvatarResponse response = new UpdateAvatarResponse();
+        BeanUtils.copyProperties(user,response);
+        return null;
     }
 
 }

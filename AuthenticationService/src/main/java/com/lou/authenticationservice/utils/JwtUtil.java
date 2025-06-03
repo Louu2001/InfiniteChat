@@ -8,6 +8,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jodd.util.StringUtil;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +32,7 @@ public class JwtUtil {
                 .setSubject(userID)
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, ConfigEnum.TOKEN_SECRET_KEY.getText())
+                .signWith(SignatureAlgorithm.HS512, ConfigEnum.TOKEN_SECRET_KEY.getText().getBytes(StandardCharsets.UTF_8))
                 .compact();
     }
 
@@ -45,9 +46,10 @@ public class JwtUtil {
         Claims claims = null;
         //解析失败了会抛出异常，所以我们要捕捉一下。token过期、token非法都会导致解析失败
         claims = Jwts.parser()
-                .setSigningKey(ConfigEnum.TOKEN_SECRET_KEY.getValue())
+                .setSigningKey(ConfigEnum.TOKEN_SECRET_KEY.getText().getBytes(StandardCharsets.UTF_8))
                 .parseClaimsJws(token)
                 .getBody();
+
 
         return claims;
     }

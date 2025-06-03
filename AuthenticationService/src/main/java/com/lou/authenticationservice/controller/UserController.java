@@ -7,10 +7,13 @@ import com.lou.authenticationservice.data.user.loginCode.LoginCodeRequest;
 import com.lou.authenticationservice.data.user.loginCode.LoginCodeResponse;
 import com.lou.authenticationservice.data.user.register.RegisterRequest;
 import com.lou.authenticationservice.data.user.register.RegisterResponse;
+import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarRequest;
+import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarResponse;
 import com.lou.authenticationservice.service.UserService;
 import com.lou.authenticationservice.utils.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -47,6 +50,16 @@ public class UserController {
     @PostMapping("/loginCode")
     public Result<LoginCodeResponse> register(@RequestBody LoginCodeRequest request) {
         LoginCodeResponse response = userService.loginCode(request);
+
+        return Result.ok(response);
+    }
+
+    @PatchMapping("/avatar")
+    public Result<UpdateAvatarResponse> updateAvatar(@Valid @RequestBody UpdateAvatarRequest request,
+                                                     @RequestHeader String Authorization) throws Exception {
+        String id = JwtUtil.parse(Authorization).getSubject();
+
+        UpdateAvatarResponse response = userService.updateAvatar(id,request);
 
         return Result.ok(response);
     }

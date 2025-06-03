@@ -7,6 +7,8 @@ import com.lou.authenticationservice.data.user.loginCode.LoginCodeRequest;
 import com.lou.authenticationservice.data.user.loginCode.LoginCodeResponse;
 import com.lou.authenticationservice.data.user.register.RegisterRequest;
 import com.lou.authenticationservice.data.user.register.RegisterResponse;
+import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarRequest;
+import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarResponse;
 import com.lou.authenticationservice.model.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -28,6 +30,7 @@ public interface UserService extends IService<User> {
 
     LoginCodeResponse loginCode(LoginCodeRequest request);
 
+    UpdateAvatarResponse updateAvatar(String id,UpdateAvatarRequest request);
 
 
 }
