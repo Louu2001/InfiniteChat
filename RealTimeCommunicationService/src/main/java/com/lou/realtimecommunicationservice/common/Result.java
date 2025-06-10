@@ -1,4 +1,4 @@
-package com.lou.authenticationservice.common;
+package com.lou.realtimecommunicationservice.common;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

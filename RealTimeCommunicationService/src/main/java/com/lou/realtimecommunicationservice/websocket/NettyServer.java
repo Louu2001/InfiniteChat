@@ -1,6 +1,9 @@
 package com.lou.realtimecommunicationservice.websocket;
 
 
+import com.alibaba.cloud.nacos.NacosServiceManager;
+import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.api.naming.NamingService;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -17,11 +20,18 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.NettyRuntime;
+import io.netty.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @Slf4j
 @Configuration
@@ -30,12 +40,31 @@ public class NettyServer {
     @Value("${netty.port}")
     private int port;
 
+    @Value("${netty.name}")
+    private String serverName;
+
+    @Autowired
+    private NacosServiceManager nacosServiceManager;
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    // discoveryClient 服务发现客户端
+    private final DiscoveryClient discoveryClient;
+
     private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
     private EventLoopGroup workerGroup = new NioEventLoopGroup(NettyRuntime.availableProcessors());
 
+    public NettyServer(DiscoveryClient discoveryClient) {
+        this.discoveryClient = discoveryClient;
+    }
+
+
     @PostConstruct
-    public void start() throws InterruptedException {
+    public void start() throws InterruptedException, UnknownHostException, NacosException {
         run();
+        NamingService namingService = nacosServiceManager.getNamingService();
+        namingService.registerInstance(serverName, InetAddress.getLocalHost().getHostAddress(),this.port);
         log.info("netty server start success");
     }
 
@@ -55,11 +84,20 @@ public class NettyServer {
                         pipeline.addLast(new HttpServerCodec());
                         pipeline.addLast(new ChunkedWriteHandler());
                         pipeline.addLast(new HttpObjectAggregator(8192));
-                        pipeline.addLast(new WebSocketServerProtocolHandler("/"));
-                        pipeline.addLast(new MessageInboundHandler());
+                        pipeline.addLast(new WebSocketTokenAuthenHeader());
+                        pipeline.addLast(new WebSocketServerProtocolHandler("/api/v1/netty"));
+                        pipeline.addLast(new MessageInboundHandler(redisTemplate));
                     }
                 });
         serverBootstrap.bind(port).sync();
+    }
 
+    @PreDestroy
+    public void destroy(){
+        Future<?> future = bossGroup.shutdownGracefully();
+        Future<?> future1 = workerGroup.shutdownGracefully();
+        future.syncUninterruptibly();
+        future1.syncUninterruptibly();
+        log.info("关闭 ws server 成功");
     }
 }
