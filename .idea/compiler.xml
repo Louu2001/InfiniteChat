@@ -8,6 +8,7 @@
         <outputRelativeToContentRoot value="true" />
         <module name="AuthenticationService" />
         <module name="GateWay" />
+        <module name="RealTimeCommunicationService" />
       </profile>
     </annotationProcessing>
   </component>

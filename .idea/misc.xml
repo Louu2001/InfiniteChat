@@ -7,6 +7,7 @@
         <option value="$PROJECT_DIR$/AuthenticationService/pom.xml" />
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/GateWay/pom.xml" />
+        <option value="$PROJECT_DIR$/RealTimeCommunicationService/pom.xml" />
       </list>
     </option>
   </component>
