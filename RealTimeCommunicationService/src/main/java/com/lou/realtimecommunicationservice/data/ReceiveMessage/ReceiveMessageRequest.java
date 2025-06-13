@@ -4,6 +4,9 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 import org.hibernate.validator.constraints.Length;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 /**
@@ -14,13 +17,15 @@ import java.util.List;
  */
 
 @Data
-@Accessors
+@Accessors(chain = true)
 public class ReceiveMessageRequest {
 
-    @Length
+    @NotEmpty(message = "接收者ID列表不能为空")
+    @Size(min = 1, message = "至少指定一个接收者")
     private List<Long> receiveUserIds;
 
-    private String sendUserId;
+    @NotNull(message = "发送者ID不能为空")
+    private Long sendUserId;
 
     private String sessionId;
 

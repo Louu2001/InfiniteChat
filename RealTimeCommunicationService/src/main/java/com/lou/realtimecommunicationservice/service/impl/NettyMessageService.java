@@ -47,6 +47,7 @@ public class NettyMessageService {
                     JSONUtil.toJsonStr(messageDTO));
             //创建 WebSocket 帧
             TextWebSocketFrame frame = new TextWebSocketFrame(JSONUtil.toJsonStr(messageDTO));
+            System.out.println("Frame: " + frame);
             //发送消息并添加监视器来处理发送结果
             channel.writeAndFlush(frame).addListener(new ChannelFutureListener() {
                 @Override

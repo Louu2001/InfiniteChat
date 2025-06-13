@@ -19,12 +19,18 @@ public class Interceptors implements WebMvcConfigurer {
 
 
     @Override
-    public void addInterceptors(InterceptorRegistry registry){
+    public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(sourceHandler)
-                .addPathPatterns("/**");
+                .addPathPatterns("/**")
+                .excludePathPatterns("/api/v1/user/register",
+                        "/api/v1/user/login",
+                        "/api/v1/user/loginCode");
 
         registry.addInterceptor(jwtHandler)
-                .addPathPatterns(new ArrayList<String>(Arrays.asList("/api/v1/user/avatar")));
+                .addPathPatterns(new ArrayList<String>(Arrays.asList("/api/v1/user/avatar")))
+                .excludePathPatterns("/api/v1/user/register",
+                        "/api/v1/user/login",
+                        "/api/v1/user/loginCode");
     }
 
 }

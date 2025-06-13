@@ -66,3 +66,5 @@ spring:
           uri: lb:ws://NettyService
           predicates:
             - Path=/api/v1/netty
+            -
+

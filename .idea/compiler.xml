@@ -6,9 +6,11 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="RealTimeCommunicationService" />
+        <module name="ContactService" />
         <module name="AuthenticationService" />
         <module name="GateWay" />
-        <module name="RealTimeCommunicationService" />
+        <module name="MessagingService" />
       </profile>
     </annotationProcessing>
   </component>

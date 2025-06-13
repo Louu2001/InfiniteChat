@@ -30,8 +30,9 @@ public class RcvMsgController {
     @Autowired
     private RcvMsgService rcvMsgService;
 
-    @PostMapping
+    @PostMapping("/user")
     public Result<ReceiveMessageResponse> receiveMessage(@Valid @RequestBody ReceiveMessageRequest request) {
+        System.out.println("2025-6-14: " + request);
         ReceiveMessageResponse response = rcvMsgService.receiveMessage(request);
 
         return Result.ok(response);

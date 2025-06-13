@@ -137,9 +137,10 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
             }
 
             //在将新的 channel 放入其中
+
             ChannelManager.addUserChannel(userUuid, ctx.channel());
             ChannelManager.addChannelUser(userUuid, ctx.channel());
-
+            System.out.println(userUuid + " " + ChannelManager.getChannelByUserId(userUuid));
             log.info("客户连接成功，用户ID: {}", userUuid + "管道地址: " + ctx.channel().remoteAddress());
         }
     }
@@ -170,7 +171,7 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
         Claims claims = JwtUtil.parse(token);
         String userId = claims.getSubject();
 
-        return userId != null && !userId.equals(userUuid);
+        return userId != null && userId.equals(userUuid);
     }
 
     @Override
