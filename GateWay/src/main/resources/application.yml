@@ -66,5 +66,8 @@ spring:
           uri: lb:ws://NettyService
           predicates:
             - Path=/api/v1/netty
-            -
+        - id: MessagingService
+          uri: lb://MessagingService
+          predicates:
+            - Path=/api/v1/chat/**,/api/v1/test/**
 

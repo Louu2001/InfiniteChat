@@ -69,8 +69,8 @@
             <option name="tableUIInfoList">
               <list>
                 <TableUIInfo>
-                  <option name="className" value="UserSession" />
-                  <option name="tableName" value="user_session" />
+                  <option name="className" value="RedPacketReceive" />
+                  <option name="tableName" value="red_packet_receive" />
                 </TableUIInfo>
               </list>
             </option>

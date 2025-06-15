@@ -16,7 +16,9 @@ import com.lou.authenticationservice.data.user.updateAvatar.UpdateAvatarResponse
 import com.lou.authenticationservice.exception.CodeException;
 import com.lou.authenticationservice.exception.DatabaseException;
 import com.lou.authenticationservice.exception.UserException;
+import com.lou.authenticationservice.mapper.UserBalanceMapper;
 import com.lou.authenticationservice.model.User;
+import com.lou.authenticationservice.model.UserBalance;
 import com.lou.authenticationservice.service.UserService;
 import com.lou.authenticationservice.mapper.UserMapper;
 import com.lou.authenticationservice.utils.JwtUtil;
@@ -26,6 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static com.lou.authenticationservice.constants.user.registerConstant.REGISTER_CODE;
 
@@ -39,6 +44,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private UserBalanceMapper userBalanceMapper;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -68,6 +76,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         boolean isUserSave = this.save(user);
         if (!isUserSave) {
             throw new DatabaseException("数据库异常，保存用户信息失败");
+        }
+
+        UserBalance userBalance = new UserBalance()
+                .setUserId(user.getUserId())
+                .setBalance(BigDecimal.valueOf(1000))
+                .setUpdatedAt(LocalDateTime.now());
+
+        int insert = userBalanceMapper.insert(userBalance);
+        if (insert <= 0) {
+            throw new DatabaseException("数据库异常，创建用户账户信息错误");
         }
 
         return new RegisterResponse().setPhone(phone);
@@ -104,7 +122,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public LoginCodeResponse loginCode(LoginCodeRequest request) {
         String redisCode = redisTemplate.opsForValue().get(REGISTER_CODE + request.getPhone());
 
-        if(redisCode == null || !redisCode.equals(request.getCode())){
+        if (redisCode == null || !redisCode.equals(request.getCode())) {
             throw new CodeException(ErrorEnum.CODE_ERROR);
         }
 
@@ -127,21 +145,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public UpdateAvatarResponse updateAvatar(String id, UpdateAvatarRequest request) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_id",Long.valueOf(id));
-        User user = this.getOnly(queryWrapper,true);
+        queryWrapper.eq("user_id", Long.valueOf(id));
+        User user = this.getOnly(queryWrapper, true);
 
-        if (user == null){
+        if (user == null) {
             throw new UserException(ErrorEnum.NO_USER_ERROR);
         }
 
         user.setAvatar(request.avatarUrl);
         boolean isUpdate = this.updateById(user);
-        if (!isUpdate){
+        if (!isUpdate) {
             throw new DatabaseException(ErrorEnum.UPDATE_AVATAR_ERROR);
         }
 
         UpdateAvatarResponse response = new UpdateAvatarResponse();
-        BeanUtils.copyProperties(user,response);
+        BeanUtils.copyProperties(user, response);
         return null;
     }
 

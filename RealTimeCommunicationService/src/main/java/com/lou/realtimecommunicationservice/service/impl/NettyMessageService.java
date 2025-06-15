@@ -5,7 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.lou.realtimecommunicationservice.constants.MessageRcvTypeEnum;
 import com.lou.realtimecommunicationservice.constants.PushTypeEnum;
 import com.lou.realtimecommunicationservice.data.ReceiveMessage.ReceiveMessageRequest;
-import com.lou.realtimecommunicationservice.excption.ServiceException;
+import com.lou.realtimecommunicationservice.excption.MessageTypeException;
 import com.lou.realtimecommunicationservice.model.*;
 import com.lou.realtimecommunicationservice.websocket.ChannelManager;
 import io.netty.channel.Channel;
@@ -51,11 +51,11 @@ public class NettyMessageService {
             //发送消息并添加监视器来处理发送结果
             channel.writeAndFlush(frame).addListener(new ChannelFutureListener() {
                 @Override
-                public void operationComplete(ChannelFuture future) throws Exception{
-                    if (future.isSuccess()){
-                        log.info("消息发送成功:{}",messageDTO);
-                    }else {
-                        log.error("消息发送失败:{}",future.cause());
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (future.isSuccess()) {
+                        log.info("消息发送成功:{}", messageDTO);
+                    } else {
+                        log.error("消息发送失败:{}", future.cause());
                     }
                 }
             });
@@ -78,7 +78,7 @@ public class NettyMessageService {
                     log.info("是否存在管道:{}", ChannelManager.getChannelByUserId(textReceiveUser.toString()));
                     if (ChannelManager.getChannelByUserId(textReceiveUser.toString()) != null) {
                         log.info("调用 sendPush: {}", textReceiveUser);
-                        sendPush(PushTypeEnum.MOMENT_NOTIFICATION, textMessage, textReceiveUser.toString());
+                        sendPush(PushTypeEnum.MESSAGE_NOTIFICATION, textMessage, textReceiveUser.toString());
                     }
                 }
                 break;
@@ -91,9 +91,28 @@ public class NettyMessageService {
                 List<Long> pictureReceiveUserIds = pictureMessage.getReceiveUserIds();
                 for (Long pictureReceiveUser : pictureReceiveUserIds) {
                     if (ChannelManager.getChannelByUserId(pictureReceiveUser.toString()) != null) {
-                        sendPush(PushTypeEnum.MOMENT_NOTIFICATION, pictureMessage, pictureReceiveUser.toString());
+                        sendPush(PushTypeEnum.MESSAGE_NOTIFICATION, pictureMessage, pictureReceiveUser.toString());
                     }
                 }
+                break;
+
+            case RED_PACKET_MESSAGE:
+                RedPacketMessage redPacketMessage = new RedPacketMessage();
+                BeanUtils.copyProperties(message, redPacketMessage);
+                RedPacketMessageBody redPacketBean = BeanUtil.toBean(message.getBody(), RedPacketMessageBody.class);
+                redPacketMessage.setBody(redPacketBean);
+                log.info("redPacketMessage:{}", redPacketBean);
+                List<Long> redPacketReceiveUserIds = redPacketMessage.getReceiveUserIds();
+                redPacketMessage.setReceiveUserIds(null); // 不发送给前端接受者字段
+                for (Long redPacketReceiveUser : redPacketReceiveUserIds) {
+                    if (ChannelManager.getChannelByUserId(redPacketReceiveUser.toString()) != null) {
+                        sendPush(PushTypeEnum.MESSAGE_NOTIFICATION, redPacketMessage, redPacketReceiveUser.toString());
+                    }
+                }
+                break;
+            default:
+                log.error("不支持的消息类型！");
+                throw new MessageTypeException("不支持该种消息类型");
 
         }
 
