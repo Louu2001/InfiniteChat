@@ -8,10 +8,14 @@
         <outputRelativeToContentRoot value="true" />
         <module name="RealTimeCommunicationService" />
         <module name="ContactService" />
-        <module name="AuthenticationService" />
         <module name="GateWay" />
+        <module name="OfflineDataStoreService" />
+        <module name="AuthenticationService" />
         <module name="MessagingService" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="OfflineDataStoreService111" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>

@@ -4,7 +4,7 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://120.26.15.45:49152/InfiniteChat?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    url: jdbc:mysql://14.103.140.112:49152/InfiniteChat?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: gK3T9n%q2M@j7Z4
     hikari:
@@ -30,13 +30,16 @@ spring:
     enabled: true
   redis:
     database: 0
-    host: 120.26.15.45
+    host: 14.103.140.112
     port: 59000
     password: e65K4t8w2
   cloud:
     nacos:
       discovery:
-        server-addr: 120.26.15.45:18375
+        server-addr: 14.103.140.112:18375
+  kafka:
+    bootstrap-servers:    
+      - 14.103.140.112:19092
 
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss

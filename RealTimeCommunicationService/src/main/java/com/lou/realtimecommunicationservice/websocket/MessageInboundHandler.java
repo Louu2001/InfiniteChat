@@ -137,7 +137,6 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
             }
 
             //在将新的 channel 放入其中
-
             ChannelManager.addUserChannel(userUuid, ctx.channel());
             ChannelManager.addChannelUser(userUuid, ctx.channel());
             System.out.println(userUuid + " " + ChannelManager.getChannelByUserId(userUuid));

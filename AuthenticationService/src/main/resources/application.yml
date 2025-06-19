@@ -6,7 +6,7 @@ spring:
     name: AuthenticationService
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://120.26.15.45:49152/InfiniteChat?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    url: jdbc:mysql://14.103.140.112:49152/InfiniteChat?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: gK3T9n%q2M@j7Z4
     hikari:
@@ -32,13 +32,13 @@ spring:
     enabled: true
   redis:
     database: 0
-    host: 120.26.15.45
+    host: 14.103.140.112
     port: 59000
     password: e65K4t8w2
   cloud:
     nacos:
       discovery:
-        server-addr: 120.26.15.45:18375
+        server-addr: 14.103.140.112:18375
 
 
 redisson:
@@ -56,7 +56,7 @@ redisson:
 
   singleServerConfig:
     # Redis服务器地址，确保协议前缀正确（redis:// 或 rediss://）
-    address: "redis://120.26.15.45:59000"
+    address: "redis://14.103.140.112:59000"
 
     # 连接池的最大连接数，影响并发处理能力
     connectionPoolSize: 500  # 根据系统并发需求和Redis服务器承载能力设置
@@ -95,7 +95,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 minio:
-  url: http://120.26.15.45:9000
+  url: http://14.103.140.112:9000
   access-key: minioadmin
   secret-key: minioadmin
 

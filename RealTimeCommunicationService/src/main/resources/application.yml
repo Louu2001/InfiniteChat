@@ -4,10 +4,10 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 120.26.15.45:18375
+        server-addr: 14.103.140.112:18375
   redis:
     database: 0
-    host: 120.26.15.45
+    host: 14.103.140.112
     port: 59000
     password: e65K4t8w2
 

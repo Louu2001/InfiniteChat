@@ -9,6 +9,7 @@ import com.lou.messagingservice.constants.ConfigEnum;
 import com.lou.messagingservice.constants.SessionType;
 import com.lou.messagingservice.constants.UserConstants;
 import com.lou.messagingservice.data.sendMsg.AppMessage;
+import com.lou.messagingservice.data.sendMsg.KafkaMsgVO;
 import com.lou.messagingservice.data.sendMsg.SendMsgRequest;
 import com.lou.messagingservice.data.sendMsg.SendMsgResponse;
 import com.lou.messagingservice.mapper.FriendMapper;
@@ -27,6 +28,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -50,7 +52,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     private static final int QUEUE_CAPACITY = 100;
 
 
-    private static final String DEFAUL_SESSION_AVATAR = "http://120.26.15.45:9000/infinite-chat/IMG_5876.jpg";
+    private static final String DEFAUL_SESSION_AVATAR = "http://14.103.140.112:9090/infinite-chat/WechatIMG1.jpeg";
 
     private static final String TIME_ZONE_SHANGHAI = "Asia/Shanghai";
 
@@ -68,6 +70,8 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     private final RedisTemplate<String, String> redisTemplate;
 
+    private final KafkaTemplate<String, String> kafkaTemplate;
+
     private final OkHttpClient httpClient = new OkHttpClient();
 
     private final ThreadPoolExecutor groupMessageExecutor;
@@ -75,13 +79,14 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     public MessageServiceImpl(UserService userService, FriendMapper friendMapper, UserSessionService userSessionService,
                               DiscoveryClient discoveryClient, SessionService sessionService,
-                              RedisTemplate<String, String> redisTemplate) {
+                              RedisTemplate<String, String> redisTemplate, KafkaTemplate<String, String> kafkaTemplate) {
         this.userService = userService;
         this.friendMapper = friendMapper;
         this.userSessionService = userSessionService;
         this.discoveryClient = discoveryClient;
         this.sessionService = sessionService;
         this.redisTemplate = redisTemplate;
+        this.kafkaTemplate = kafkaTemplate;
         this.groupMessageExecutor = new ThreadPoolExecutor(
                 CORE_POOL_SIZE,
                 MAX_POOL_SIZE,
@@ -108,19 +113,33 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         appMessage.setMessageId(messageId).setCreated(formatDate(createdAt));
 
         // TODO: 发送到kafka
+        sendKafkaMessage(request, request.getSendUserId(), messageId, createdAt);
+
         // TODO: 转发给RealtimeCommunicationService
         // 4.通过redis查询接收者的netty服务器在哪
         sendRealTimeMessage(request, appMessage, createdAt);
 
         return buildAppMessage(appMessage);
+    }
 
-        // 5.发消息
+    private void sendKafkaMessage(SendMsgRequest sendMsgRequest, Long sendUserId, Long messageId, Date createdAt) {
+        KafkaMsgVO kafkaMsgVO = new KafkaMsgVO();
+        BeanUtils.copyProperties(sendMsgRequest, kafkaMsgVO);
+        kafkaMsgVO.setMessageId(messageId)
+                .setCreateAt(createdAt);
 
+        String kafkaJSON = JSON.toJSONString(kafkaMsgVO);
+        log.info("发送Kafka消息: {}", kafkaJSON);
+
+        kafkaTemplate.send(ConfigEnum.KAFKA_TOPICS.getValue(), sendMsgRequest.getSessionId().toString(), kafkaJSON)
+                .addCallback(result -> log.info("kafka消息发送成功: {}", result.getRecordMetadata()),
+                        ex -> log.error("kafka消息发送失败: {}", ex.getMessage())
+                );
     }
 
     private void sendRealTimeMessage(SendMsgRequest sendMsgRequest, AppMessage appMessage, Date createdAt) {
         String json = JSON.toJSONString(appMessage);
-        String nettyServerIP = redisTemplate.opsForValue().get(UserConstants.USER_SESSION + sendMsgRequest.getSendUserId().toString());
+        String nettyServerIP = redisTemplate.opsForValue().get(UserConstants.USER_SESSION + sendMsgRequest.getReceiveUserId().toString());
         RequestBody requestBody = RequestBody.create(
                 MediaType.parse(ConfigEnum.MEDIA_TYPE.getValue()),
                 json
@@ -148,7 +167,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         try {
             if (nettyServerIP != null) {
                 Request request = new Request.Builder()
-                        .url("http://" + nettyServerIP + ":8083" +  ConfigEnum.MSG_URL.getValue())
+                        .url("http://" + nettyServerIP + ":8083" + ConfigEnum.MSG_URL.getValue())
                         .post(requestBody)
                         .build();
                 executeHttpRequest(request);

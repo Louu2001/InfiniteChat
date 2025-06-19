@@ -7,7 +7,7 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 120.26.15.45:18375
+        server-addr: 14.103.140.112:18375
     gateway:
       httpclient:
         connect-timeout: 60000 # 连接超时时间，单位毫秒

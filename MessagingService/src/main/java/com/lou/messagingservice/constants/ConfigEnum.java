@@ -19,7 +19,7 @@ public enum ConfigEnum {
 
     DATACENTER_ID("DATACENTER_ID", "1"),
 
-    IMAGE_URI("imageUri","http://120.26.15.45:9000/infinite-chat/img/avatar"),
+    IMAGE_URI("imageUri","http://http://14.103.140.112:9090/infinite-chat/img/avatar"),
 
     MEDIA_TYPE("mediaType","application/json; charset=utf-8"),
 
