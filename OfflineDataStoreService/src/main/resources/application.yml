@@ -1,6 +1,6 @@
 spring:
   application:
-    name: AuthenticationService
+    name: OfflineDataStoreService
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://14.103.140.112:49152/InfiniteChat?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC

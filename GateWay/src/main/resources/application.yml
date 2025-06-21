@@ -61,13 +61,25 @@ spring:
           uri: lb://RealTimeCommunicationService
           predicates:
             - Path=/api/v1/message/**
+        #Netty 长链接服务
         - id: NettyService
           #uri: ws://127.0.0.1:9000
           uri: lb:ws://NettyService
           predicates:
             - Path=/api/v1/netty
+        # 消息模块
         - id: MessagingService
           uri: lb://MessagingService
           predicates:
             - Path=/api/v1/chat/**,/api/v1/test/**
+        # 离线存储模块
+        - id: OfflineDataStoreService
+          uri: lb://OfflineDataStoreService
+          predicates:
+            - Path=/api/v1/offline/**
+        # 朋友圈模块
+        - id: MomentService
+          uri: lb://MomentService
+          predicates:
+            - Path=/api/v1/moment/**
 

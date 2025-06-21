@@ -16,5 +16,6 @@
         <module>MessagingService</module>
         <module>OfflineDataStoreService</module>
         <module>ContactService</module>
+        <module>MomentService</module>
     </modules>
 </project>

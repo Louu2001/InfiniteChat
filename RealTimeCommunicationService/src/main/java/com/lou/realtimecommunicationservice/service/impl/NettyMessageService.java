@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.lou.realtimecommunicationservice.constants.MessageRcvTypeEnum;
 import com.lou.realtimecommunicationservice.constants.PushTypeEnum;
+import com.lou.realtimecommunicationservice.data.ReceiveMessage.PushMoment.PushMomentRequest;
 import com.lou.realtimecommunicationservice.data.ReceiveMessage.ReceiveMessageRequest;
 import com.lou.realtimecommunicationservice.excption.MessageTypeException;
 import com.lou.realtimecommunicationservice.model.*;
@@ -113,8 +114,16 @@ public class NettyMessageService {
             default:
                 log.error("不支持的消息类型！");
                 throw new MessageTypeException("不支持该种消息类型");
-
         }
+    }
 
+    public void sendNoticeMoment(PushMomentRequest request) {
+        List<Long> userIds = request.getReceiveUserIds();
+        for (Long userId : userIds) {
+            if (ChannelManager.getChannelByUserId(userId.toString()) != null) {
+                request.setReceiveUserIds(null);
+                sendPush(PushTypeEnum.MOMENT_NOTIFICATION, request, userId.toString());
+            }
+        }
     }
 }
