@@ -2,9 +2,15 @@ package com.lou.momentservice.service.impl;
 
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.lou.momentservice.Exception.DatabaseException;
+import com.lou.momentservice.Exception.UserException;
 import com.lou.momentservice.constants.ConfigEnum;
+import com.lou.momentservice.constants.ErrorEnum;
 import com.lou.momentservice.constants.MomentConstants;
+import com.lou.momentservice.data.deleteLike.DeleteLikeRequest;
+import com.lou.momentservice.data.deleteLike.DeleteLikeResponse;
 import com.lou.momentservice.data.createLike.CreateLikeRequest;
 import com.lou.momentservice.data.createLike.CreateLikeResponse;
 import com.lou.momentservice.model.MomentLike;
@@ -19,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -86,13 +93,40 @@ public class MomentLikeServiceImpl extends ServiceImpl<MomentLikeMapper, MomentL
     }
 
     @Override
-    public CreateLikeResponse likeMomentResponse(Long momentId, CreateLikeRequest request) throws Exception {
+    public CreateLikeResponse likeMoment(Long momentId, CreateLikeRequest request) throws Exception {
         Long likeId = createLikeWithNotification(momentId, request.getUserId());
 
         CreateLikeResponse response = new CreateLikeResponse();
         response.setLikeId(likeId);
 
         return response;
+    }
+
+    @Override
+    public DeleteLikeResponse deleteLikeMoment(DeleteLikeRequest request) {
+        // 检查点赞是否存在
+        QueryWrapper<MomentLike> queryWrapper = new QueryWrapper<>();
+
+        queryWrapper.eq(MomentConstants.FIELD_MOMENT_ID,request.getMomentId())
+                .eq(MomentConstants.FIELD_LIKE_ID,request.getLikeId())
+                .eq(MomentConstants.FIELD_USER_ID,request.getUserId());
+
+        MomentLike like = this.getOne(queryWrapper);
+        if (like == null) {
+            log.error("删除点赞失败： 找不到点赞记录, 朋友圈ID: {}, 点赞ID: {}, 用户ID: {}",request.getMomentId(),request.getLikeId(),request.getUserId());
+
+            throw new UserException(ErrorEnum.DELETE_LIKE_FAILED_MSG);
+        }
+
+        like.setIsDelete(MomentConstants.DELETED);
+        like.setUpdateTime(new Date());
+
+        boolean update = this.update(like, queryWrapper);
+        if (!update){
+            throw new DatabaseException(ErrorEnum.DATABASE_ERROR.getCode(),ErrorEnum.DATABASE_ERROR.getMessage());
+        }
+
+        return new DeleteLikeResponse().setMessage(MomentConstants.DELETE_LIKE_SUCCESS_MSG);
     }
 
     /**

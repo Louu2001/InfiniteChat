@@ -1,5 +1,6 @@
 package com.lou.momentservice.common;
 
+import com.lou.momentservice.constants.ErrorEnum;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

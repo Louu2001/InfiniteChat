@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.shanyangcode.infinitechat.momentservice.mapper.MomentLikeMapper">
+<mapper namespace="com.lou.momentservice.mapper.MomentLikeMapper">
 
-    <resultMap id="BaseResultMap" type="com.shanyangcode.infinitechat.momentservice.model.MomentLike">
+    <resultMap id="BaseResultMap" type="com.lou.momentservice.model.MomentLike">
             <id property="likeId" column="like_id" jdbcType="BIGINT"/>
             <result property="momentId" column="moment_id" jdbcType="BIGINT"/>
             <result property="userId" column="user_id" jdbcType="BIGINT"/>

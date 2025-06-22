@@ -1,5 +1,7 @@
 package com.lou.momentservice.service;
 
+import com.lou.momentservice.data.deleteLike.DeleteLikeRequest;
+import com.lou.momentservice.data.deleteLike.DeleteLikeResponse;
 import com.lou.momentservice.data.createLike.CreateLikeRequest;
 import com.lou.momentservice.data.createLike.CreateLikeResponse;
 import com.lou.momentservice.model.MomentLike;
@@ -21,5 +23,7 @@ public interface MomentLikeService extends IService<MomentLike> {
      */
     Long createLike(Long momentId, Long userId);
 
-    CreateLikeResponse likeMomentResponse(Long momentId, CreateLikeRequest request) throws Exception;
+    CreateLikeResponse likeMoment(Long momentId, CreateLikeRequest request) throws Exception;
+
+    DeleteLikeResponse deleteLikeMoment(DeleteLikeRequest request);
 }

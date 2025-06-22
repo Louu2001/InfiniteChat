@@ -1,4 +1,4 @@
-package com.lou.realtimecommunicationservice.data.ReceiveMessage.PushMoment;
+package com.lou.realtimecommunicationservice.data.PushMoment;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

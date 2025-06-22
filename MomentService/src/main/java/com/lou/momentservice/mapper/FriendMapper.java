@@ -2,6 +2,7 @@ package com.lou.momentservice.mapper;
 
 import com.lou.momentservice.model.Friend;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
 * @author Lou
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2025-06-21 21:14:43
 * @Entity com.lou.momentservice.model.Friend
 */
+@Mapper
 public interface FriendMapper extends BaseMapper<Friend> {
 
 }

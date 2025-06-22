@@ -14,6 +14,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -40,6 +41,7 @@ public class SendOkHttpRequest {
     /**
      * Redis模板
      */
+    @Autowired
     private final RedisTemplate<String, String> stringRedisTemplate;
 
     /**
@@ -137,7 +139,7 @@ public class SendOkHttpRequest {
 
             // 执行请求
             client.newCall(request).execute();
-            log.debug("成功向实例 {} 发送通知", instance.getUri());
+            log.info("成功向实例 {} 发送通知", instance.getUri());
 
         } catch (Exception e) {
             log.error("向实例 {} 发送通知失败: {}", instance.getUri(), e.getMessage());

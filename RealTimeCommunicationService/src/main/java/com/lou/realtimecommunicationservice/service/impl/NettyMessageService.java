@@ -4,7 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.lou.realtimecommunicationservice.constants.MessageRcvTypeEnum;
 import com.lou.realtimecommunicationservice.constants.PushTypeEnum;
-import com.lou.realtimecommunicationservice.data.ReceiveMessage.PushMoment.PushMomentRequest;
+import com.lou.realtimecommunicationservice.data.PushMoment.PushMomentRequest;
 import com.lou.realtimecommunicationservice.data.ReceiveMessage.ReceiveMessageRequest;
 import com.lou.realtimecommunicationservice.excption.MessageTypeException;
 import com.lou.realtimecommunicationservice.model.*;

@@ -1,7 +1,7 @@
 package com.lou.realtimecommunicationservice.controller;
 
 import com.lou.realtimecommunicationservice.common.Result;
-import com.lou.realtimecommunicationservice.data.ReceiveMessage.PushMoment.PushMomentRequest;
+import com.lou.realtimecommunicationservice.data.PushMoment.PushMomentRequest;
 import com.lou.realtimecommunicationservice.service.impl.NettyMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
