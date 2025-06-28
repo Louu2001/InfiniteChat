@@ -1,14 +1,13 @@
 package com.lou.realtimecommunicationservice.controller;
 
 import com.lou.realtimecommunicationservice.common.Result;
+import com.lou.realtimecommunicationservice.data.ApplyFriend.FriendApplicationNotification;
 import com.lou.realtimecommunicationservice.data.PushMoment.PushMomentRequest;
+import com.lou.realtimecommunicationservice.data.PushSession.NewSessionNotification;
 import com.lou.realtimecommunicationservice.service.impl.NettyMessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @ClassName PushController
@@ -25,9 +24,24 @@ public class PushController {
     @Autowired
     private NettyMessageService nettyMessageService;
 
-    @PostMapping
-    public Result<?> receiveNoticeMoment(@RequestBody PushMomentRequest request){
+    @PostMapping("/moment")
+    public Result<?> receiveNoticeMoment(@RequestBody PushMomentRequest request) {
         nettyMessageService.sendNoticeMoment(request);
         return Result.ok(null);
+    }
+
+    @PostMapping("/friendApplication/{userId}")
+    public Result<?> pushFriendApplication(@PathVariable("userId") String userId,
+                                           @RequestBody FriendApplicationNotification notification) {
+        nettyMessageService.sendFriendApplicationNotification(notification, userId);
+        return Result.ok("Friend application notification pushed.");
+    }
+
+    @PostMapping("/newSession/{userId}")
+    public Result<?> pushNewSession(@PathVariable("userId") String userId
+            , @RequestBody NewSessionNotification notification) {
+        nettyMessageService.sendNewSessionNotification(notification, userId);
+
+        return Result.ok("New session notification pushed");
     }
 }

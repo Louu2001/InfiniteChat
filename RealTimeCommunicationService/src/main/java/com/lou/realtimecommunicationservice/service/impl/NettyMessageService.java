@@ -4,7 +4,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.lou.realtimecommunicationservice.constants.MessageRcvTypeEnum;
 import com.lou.realtimecommunicationservice.constants.PushTypeEnum;
+import com.lou.realtimecommunicationservice.data.ApplyFriend.FriendApplicationNotification;
 import com.lou.realtimecommunicationservice.data.PushMoment.PushMomentRequest;
+import com.lou.realtimecommunicationservice.data.PushSession.NewSessionNotification;
 import com.lou.realtimecommunicationservice.data.ReceiveMessage.ReceiveMessageRequest;
 import com.lou.realtimecommunicationservice.excption.MessageTypeException;
 import com.lou.realtimecommunicationservice.model.*;
@@ -125,5 +127,13 @@ public class NettyMessageService {
                 sendPush(PushTypeEnum.MOMENT_NOTIFICATION, request, userId.toString());
             }
         }
+    }
+
+    public void sendFriendApplicationNotification(FriendApplicationNotification notification, String userId) {
+        sendPush(PushTypeEnum.FRIEND_APPLICATION_NOTIFICATION, notification, userId);
+    }
+
+    public void sendNewSessionNotification(NewSessionNotification notification, String userId) {
+        sendPush(PushTypeEnum.NEW_SESSION_NOTIFICATION, notification, userId);
     }
 }

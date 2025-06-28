@@ -82,4 +82,9 @@ spring:
           uri: lb://MomentService
           predicates:
             - Path=/api/v1/moment/**
+        # 联系人模块
+        - id: ContactService
+          uri: lb://ContactService
+          predicates:
+            - Path=/api/v1/contact/**
 
