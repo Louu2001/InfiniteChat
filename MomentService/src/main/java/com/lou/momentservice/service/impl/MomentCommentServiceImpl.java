@@ -158,7 +158,7 @@ public class MomentCommentServiceImpl extends ServiceImpl<MomentCommentMapper, M
         MomentComment comment = findComment(momentId, commentId, userId);
 
         // 没查到评论或不是当前发起人进行的评论，则返回错误信息
-        if (comment == null) {
+        if (comment == null || comment.getIsDelete() == 1) {
             log.error("删除评论失败：找不到评论记录，朋友圈ID: {}, 评论ID: {}, 用户ID: {}", momentId, commentId, userId);
 
             throw new UserException(ErrorEnum.DELETE_MOMENT_COMMENT_FAILED_MSG);

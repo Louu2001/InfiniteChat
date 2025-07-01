@@ -144,7 +144,7 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
         }
     }
 
-    //下线函数
+    // 下线函数
     public void offline(ChannelHandlerContext ctx) {
         String userUuid = ChannelManager.getUserByChannel(ctx.channel());
 

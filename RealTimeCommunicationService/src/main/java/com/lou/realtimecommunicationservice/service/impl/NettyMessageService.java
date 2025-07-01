@@ -6,6 +6,7 @@ import com.lou.realtimecommunicationservice.constants.MessageRcvTypeEnum;
 import com.lou.realtimecommunicationservice.constants.PushTypeEnum;
 import com.lou.realtimecommunicationservice.data.ApplyFriend.FriendApplicationNotification;
 import com.lou.realtimecommunicationservice.data.PushMoment.PushMomentRequest;
+import com.lou.realtimecommunicationservice.data.PushSession.NewGroupSessionNotification;
 import com.lou.realtimecommunicationservice.data.PushSession.NewSessionNotification;
 import com.lou.realtimecommunicationservice.data.ReceiveMessage.ReceiveMessageRequest;
 import com.lou.realtimecommunicationservice.excption.MessageTypeException;
@@ -136,4 +137,9 @@ public class NettyMessageService {
     public void sendNewSessionNotification(NewSessionNotification notification, String userId) {
         sendPush(PushTypeEnum.NEW_SESSION_NOTIFICATION, notification, userId);
     }
+
+    public void sendNewGroupSessionNotification(NewGroupSessionNotification notification, String userId) {
+        sendPush(PushTypeEnum.NEW_SESSION_NOTIFICATION, notification, userId);
+    }
+
 }

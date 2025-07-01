@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 import lombok.Data;
+import lombok.experimental.Accessors;
 
 /**
  * 会话表
@@ -13,6 +14,7 @@ import lombok.Data;
  */
 @TableName(value ="session")
 @Data
+@Accessors(chain = true)
 public class Session {
     /**
      * 主键 ID

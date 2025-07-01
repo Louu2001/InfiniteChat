@@ -7,16 +7,27 @@ import com.lou.contactservice.data.ApplyList.ApplyListRequest;
 import com.lou.contactservice.data.ApplyList.ApplyListResponse;
 import com.lou.contactservice.data.BlockFriend.BlockFriendRequest;
 import com.lou.contactservice.data.BlockFriend.BlockFriendResponse;
+import com.lou.contactservice.data.CreateGroup.CreateGroupRequest;
+import com.lou.contactservice.data.CreateGroup.CreateGroupResponse;
 import com.lou.contactservice.data.DeleteFriend.DeleteFriendRequest;
 import com.lou.contactservice.data.DeleteFriend.DeleteFriendResponse;
+import com.lou.contactservice.data.ExitGroup.ExitGroupRequest;
+import com.lou.contactservice.data.ExitGroup.ExitGroupResponse;
+import com.lou.contactservice.data.FriendDetail.FriendDetailRequest;
+import com.lou.contactservice.data.FriendDetail.FriendDetailResponse;
+import com.lou.contactservice.data.GetGroupMembers.GroupMembersRequest;
+import com.lou.contactservice.data.GetGroupMembers.GroupMembersResponse;
+import com.lou.contactservice.data.KickGroup.KickGroupMembersRequest;
+import com.lou.contactservice.data.KickGroup.KickGroupMembersResponse;
 import com.lou.contactservice.data.ModifyApply.ModifyApplyRequest;
 import com.lou.contactservice.data.ModifyApply.ModifyApplyResponse;
 import com.lou.contactservice.data.SearchUser.SearchUserRequest;
 import com.lou.contactservice.data.SearchUser.SearchUserResponse;
 import com.lou.contactservice.data.UnreadApply.UnreadApplyRequest;
 import com.lou.contactservice.data.UnreadApply.UnreadApplyResponse;
-import com.lou.contactservice.service.ApplyFriendService;
-import com.lou.contactservice.service.FriendService;
+import com.lou.contactservice.data.inviteGroup.InviteGroupRequest;
+import com.lou.contactservice.data.inviteGroup.InviteGroupResponse;
+import com.lou.contactservice.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +44,21 @@ public class ContactController {
 
     @Autowired
     private ApplyFriendService applyFriendService;
+
+    @Autowired
+    private SessionService sessionService;
+
+    @Autowired
+    private GroupService groupService;
+
+    @Autowired
+    private KickGroupService kickGroupService;
+
+    @Autowired
+    private ExitGroupService exitGroupService;
+
+    @Autowired
+    private GetGroupMembersService getGroupMembersService;
 
 //    @GetMapping("/user")
 //    public Result<UserResponse> getUser() {
@@ -55,6 +81,16 @@ public class ContactController {
                                @RequestBody AddFriendRequest request) throws Exception {
         applyFriendService.addFriend(userUuid, receiveUserUuid, request);
         return Result.OK(1);
+    }
+
+    /**
+     * 获取用户信息详情
+     */
+    @GetMapping("/{userUuid}/friend/{friendUuid}")
+    public Result<FriendDetailResponse> getFriendDetail(@Valid @ModelAttribute FriendDetailRequest request) {
+        FriendDetailResponse response = friendService.getFriendDetails(request);
+
+        return Result.OK(response);
     }
 
     @GetMapping("/{userUuid}/applyCount")
@@ -87,13 +123,48 @@ public class ContactController {
     }
 
     @PostMapping("/{userUuid}/block/{receiveUserUuid}")
-    public Result<BlockFriendResponse> blockFriend(@Valid @ModelAttribute BlockFriendRequest request) throws Exception{
+    public Result<BlockFriendResponse> blockFriend(@Valid @ModelAttribute BlockFriendRequest request) throws Exception {
         BlockFriendResponse response = friendService.blockFriend(request);
 
         return Result.OK(response);
     }
 
-//    @GetMapping("")
+
+    // Group
+    @PostMapping("/groups")
+    public Result<CreateGroupResponse> createGroup(@Valid @RequestBody CreateGroupRequest request) {
+        CreateGroupResponse response = sessionService.createGroup(request);
+
+        return Result.OK(response);
+    }
+
+    @PostMapping("/group/invite")
+    public Result<InviteGroupResponse> inviteGroup(@Valid @RequestBody InviteGroupRequest request) throws Exception {
+        InviteGroupResponse response = groupService.inviteGroup(request);
+
+        return Result.OK(response);
+    }
+
+    @PostMapping("/group/kick")
+    public Result<KickGroupMembersResponse> kickGroupMembers(@Valid @RequestBody KickGroupMembersRequest request) {
+        KickGroupMembersResponse response = kickGroupService.kickGroupMembers(request);
+
+        return Result.OK(response);
+    }
+
+    @PostMapping("/group/exit")
+    public Result<ExitGroupResponse> exitGroup(@RequestBody ExitGroupRequest request) {
+        ExitGroupResponse response = exitGroupService.exitGroup(request);
+
+        return Result.OK(response);
+    }
+
+    @GetMapping("/group/{sessionId}/members")
+    public Result<GroupMembersResponse> getGroupMembers(@Valid GroupMembersRequest request) {
+        GroupMembersResponse response = getGroupMembersService.getGroupMembers(request);
+
+        return Result.OK(response);
+    }
 
 
 }

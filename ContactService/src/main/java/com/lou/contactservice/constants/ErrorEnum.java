@@ -11,6 +11,7 @@ public enum ErrorEnum {
     OPTION_ERROR(40001,"操作失败"),
 
     NO_USER_ERROR(40004, "用户不存在"),
+    USER_STATUS_ERROR(40006,"用户状态异常"),
     DELETE_MOMENT_FAILED_MSG(40005, "删除失败, 朋友圈不存在"),
     DELETE_LIKE_FAILED_MSG(40006, "删除失败，点赞不存在"),
     DELETE_MOMENT_COMMENT_FAILED_MSG(40007, "删除失败，朋友圈评论不存在"),

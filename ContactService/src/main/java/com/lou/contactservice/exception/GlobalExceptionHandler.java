@@ -84,5 +84,12 @@ public class GlobalExceptionHandler {
         return Result.GroupError(e.getCode(), e.getMessage());
     }
 
+    @ExceptionHandler(value = ValidationException.class)
+    public Result<?> handleValidationException(ValidationException e) {
+        log.error("数据验证异常：{}", e.getMessage());
+        return Result.ValidError(e.getMessage());
+    }
+
+
 
 }

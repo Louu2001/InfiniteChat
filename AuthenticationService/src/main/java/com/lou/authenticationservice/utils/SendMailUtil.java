@@ -35,6 +35,7 @@ public class SendMailUtil {
             mail.setSubject("注册验证码");
             // 邮件的内容
             mail.setMsg("您的验证码为:" + authCode+"(一分钟内有效)");
+            mail.setSmtpPort(465);
             // 发送
             mail.send();
         } catch (EmailException e) {

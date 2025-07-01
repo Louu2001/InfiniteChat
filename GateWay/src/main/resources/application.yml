@@ -71,7 +71,7 @@ spring:
         - id: MessagingService
           uri: lb://MessagingService
           predicates:
-            - Path=/api/v1/chat/**,/api/v1/test/**
+            - Path=/api/v1/chat/**
         # 离线存储模块
         - id: OfflineDataStoreService
           uri: lb://OfflineDataStoreService

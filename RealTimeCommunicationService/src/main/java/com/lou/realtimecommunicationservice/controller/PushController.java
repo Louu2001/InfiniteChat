@@ -3,6 +3,7 @@ package com.lou.realtimecommunicationservice.controller;
 import com.lou.realtimecommunicationservice.common.Result;
 import com.lou.realtimecommunicationservice.data.ApplyFriend.FriendApplicationNotification;
 import com.lou.realtimecommunicationservice.data.PushMoment.PushMomentRequest;
+import com.lou.realtimecommunicationservice.data.PushSession.NewGroupSessionNotification;
 import com.lou.realtimecommunicationservice.data.PushSession.NewSessionNotification;
 import com.lou.realtimecommunicationservice.service.impl.NettyMessageService;
 import lombok.extern.slf4j.Slf4j;
@@ -44,4 +45,14 @@ public class PushController {
 
         return Result.ok("New session notification pushed");
     }
+
+    @PostMapping("/newGroupSession/{userId}")
+    public Result<?> pushNewGroupSession(
+            @PathVariable("userId") String userId,
+            @RequestBody NewGroupSessionNotification notification
+    ) {
+        nettyMessageService.sendNewGroupSessionNotification(notification, userId);
+        return Result.ok("New Group session notification pushed.");
+    }
+
 }

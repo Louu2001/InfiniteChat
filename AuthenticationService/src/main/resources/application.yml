@@ -39,6 +39,23 @@ spring:
     nacos:
       discovery:
         server-addr: 14.103.140.112:18375
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: 1187602886@qq.com
+    password: gokknyjhfebhhggb
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.ssl.enable: false
+      mail.smtp.auth: true
+      mail.debug: false
+
+
+
+
 
 
 redisson:
@@ -76,10 +93,8 @@ redisson:
     # 重试次数，当连接失败时重试的次数
     retryAttempts: 3  # 默认重试3次
 
-
     # 重试间隔，重试之间的等待时间
     retryInterval: 1500  # 毫秒，建议设置为1500（1.5秒）
-
     password: "e65K4t8w2"
     database: 0
 

@@ -21,6 +21,4 @@ public class MessageConsumer {
     public void listen(String message) {
         messageService.saveOfflineMessage(message);
     }
-
-
 }
