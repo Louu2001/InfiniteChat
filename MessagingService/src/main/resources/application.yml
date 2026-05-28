@@ -46,3 +46,15 @@ spring:
     time-zone: GMT+8
 server:
   port: 8081
+
+message:
+  outbox:
+    retry-fixed-delay: 10000
+    retry-delay-millis: 10000
+    pending-timeout-millis: 30000
+    max-retry-count: 10
+    retry-batch-size: 100
+
+red-packet:
+  expire-scan-fixed-delay: 60000
+  expire-scan-limit: 100

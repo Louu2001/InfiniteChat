@@ -77,6 +77,11 @@ public class RedPacket {
      */
     private LocalDateTime createdAt;
 
+    /**
+     * 过期时间
+     */
+    private LocalDateTime expireAt;
+
     @Override
     public boolean equals(Object that) {
         if (this == that) {

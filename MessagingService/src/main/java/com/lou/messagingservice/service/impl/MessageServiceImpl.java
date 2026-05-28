@@ -22,13 +22,13 @@ import com.lou.messagingservice.service.MessageService;
 import com.lou.messagingservice.service.SessionService;
 import com.lou.messagingservice.service.UserService;
 import com.lou.messagingservice.service.UserSessionService;
+import com.lou.messagingservice.service.KafkaOutboxService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -70,7 +70,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaOutboxService kafkaOutboxService;
 
     private final OkHttpClient httpClient = new OkHttpClient();
 
@@ -79,14 +79,14 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
 
     public MessageServiceImpl(UserService userService, FriendMapper friendMapper, UserSessionService userSessionService,
                               DiscoveryClient discoveryClient, SessionService sessionService,
-                              RedisTemplate<String, String> redisTemplate, KafkaTemplate<String, String> kafkaTemplate) {
+                              RedisTemplate<String, String> redisTemplate, KafkaOutboxService kafkaOutboxService) {
         this.userService = userService;
         this.friendMapper = friendMapper;
         this.userSessionService = userSessionService;
         this.discoveryClient = discoveryClient;
         this.sessionService = sessionService;
         this.redisTemplate = redisTemplate;
-        this.kafkaTemplate = kafkaTemplate;
+        this.kafkaOutboxService = kafkaOutboxService;
         this.groupMessageExecutor = new ThreadPoolExecutor(
                 CORE_POOL_SIZE,
                 MAX_POOL_SIZE,
@@ -112,7 +112,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         Date createdAt = new Date();
         appMessage.setMessageId(messageId).setCreated(formatDate(createdAt));
 
-        // TODO: 发送到kafka
+        // 写入本地outbox后异步发送Kafka，失败时由定时任务补偿
         sendKafkaMessage(request, request.getSendUserId(), messageId, createdAt);
 
         // TODO: 转发给RealtimeCommunicationService
@@ -131,10 +131,12 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         String kafkaJSON = JSON.toJSONString(kafkaMsgVO);
         log.info("发送Kafka消息: {}", kafkaJSON);
 
-        kafkaTemplate.send(ConfigEnum.KAFKA_TOPICS.getValue(), sendMsgRequest.getSessionId().toString(), kafkaJSON)
-                .addCallback(result -> log.info("kafka消息发送成功: {}", result.getRecordMetadata()),
-                        ex -> log.error("kafka消息发送失败: {}", ex.getMessage())
-                );
+        kafkaOutboxService.saveAndSend(
+                messageId,
+                ConfigEnum.KAFKA_TOPICS.getValue(),
+                sendMsgRequest.getSessionId().toString(),
+                kafkaJSON
+        );
     }
 
     private void sendRealTimeMessage(SendMsgRequest sendMsgRequest, AppMessage appMessage, Date createdAt) {

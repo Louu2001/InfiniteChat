@@ -7,6 +7,8 @@ import java.math.BigDecimal;
  */
 public enum RedPacketConstants {
     RED_PACKET_KEY_PREFIX("red_packet:count:"),
+    RED_PACKET_AMOUNT_KEY_PREFIX("red_packet:amount:"),
+    RED_PACKET_USER_KEY_PREFIX("red_packet:users:"),
     RED_PACKET_LUA_SCRIPT(
             "local count = redis.call('get', KEYS[1]) " +
                     "if count == false then " +
@@ -18,6 +20,23 @@ public enum RedPacketConstants {
                     "else " +
                     "    return tonumber(2) " + //明确返回数字
                     "end"),
+    RED_PACKET_CLAIM_LUA_SCRIPT(
+            "if redis.call('sismember', KEYS[2], ARGV[1]) == 1 then " +
+                    "    return '-1' " +
+                    "end " +
+                    "local amount = redis.call('rpop', KEYS[1]) " +
+                    "if amount == false then " +
+                    "    return '0' " +
+                    "end " +
+                    "redis.call('sadd', KEYS[2], ARGV[1]) " +
+                    "return amount"),
+    RED_PACKET_COMPENSATE_LUA_SCRIPT(
+            "if redis.call('sismember', KEYS[2], ARGV[1]) == 1 then " +
+                    "    redis.call('srem', KEYS[2], ARGV[1]) " +
+                    "    redis.call('lpush', KEYS[1], ARGV[2]) " +
+                    "    return '1' " +
+                    "end " +
+                    "return '0'"),
     RED_PACKET_TYPE_NORMAL("1"),
     RED_PACKET_TYPE_RANDOM("2"),
     WORKED_ID("1"),

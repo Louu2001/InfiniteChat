@@ -16,10 +16,11 @@
             <result property="remainingCount" column="remaining_count" />
             <result property="status" column="status" />
             <result property="createdAt" column="created_at" />
+            <result property="expireAt" column="expire_at" />
     </resultMap>
 
     <sql id="Base_Column_List">
         red_packet_id,sender_id,session_id,red_packet_wrapper_text,red_packet_type,total_amount,
-        total_count,remaining_amount,remaining_count,status,created_at
+        total_count,remaining_amount,remaining_count,status,created_at,expire_at
     </sql>
 </mapper>

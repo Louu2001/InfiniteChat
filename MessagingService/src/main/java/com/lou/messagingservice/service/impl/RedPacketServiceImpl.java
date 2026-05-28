@@ -25,13 +25,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author loujun
@@ -51,18 +59,30 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
 
     private final RedisTemplate<String, Object> redisTemplate;
 
+    private final StringRedisTemplate stringRedisTemplate;
+
     private final Snowflake snowflake;
     private final MessageService messageService;
+
+    private final TransactionTemplate transactionTemplate;
+
+    @Value("${red-packet.expire-scan-limit:100}")
+    private int expireScanLimit;
 
     @Autowired
     public RedPacketServiceImpl(UserBalanceMapper userBalanceMapper,
                                 BalanceLogMapper balanceLogMapper,
                                 MessageMapper messageMapper,
-                                RedisTemplate<String, Object> redisTemplate, MessageService messageService) {
+                                RedisTemplate<String, Object> redisTemplate,
+                                StringRedisTemplate stringRedisTemplate,
+                                PlatformTransactionManager transactionManager,
+                                MessageService messageService) {
         this.userBalanceMapper = userBalanceMapper;
         this.balanceLogMapper = balanceLogMapper;
         this.messageMapper = messageMapper;
         this.redisTemplate = redisTemplate;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
         this.snowflake = IdUtil.getSnowflake(
                 Integer.parseInt(RedPacketConstants.WORKED_ID.getValue()),
                 Integer.parseInt(RedPacketConstants.DATACENTER_ID.getValue()
@@ -73,42 +93,110 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
     @Override
     @Transactional
     public SendRedPacketResponse sendRedPacket(SendRedPacketRequest request) throws Exception {
+        RedPacket redPacket = null;
+        boolean redisInitialized = false;
         //提取并验证参数
-        SendRedPacketRequest.Body body = request.getBody();
-        validateSendRedPacketRequest(body);
+        try {
+            SendRedPacketRequest.Body body = request.getBody();
+            validateSendRedPacketRequest(body);
 
-        Long senderId = request.getSendUserId();
-        BigDecimal totalAmount = body.getTotalAmount();
-        int totalCount = body.getTotalCount();
-        int redPacketType = body.getRedPacketType();
+            Long senderId = request.getSendUserId();
+            BigDecimal totalAmount = body.getTotalAmount();
+            int totalCount = body.getTotalCount();
+            int redPacketType = body.getRedPacketType();
 
-        //检查发送者余额
-        deductUserBalance(getUserBalance(senderId), totalAmount);
+            //检查发送者余额
+            deductUserBalance(senderId, totalAmount);
 
-        //创建红包记录
-        RedPacket redPacket = createRedPacket(senderId, request, body, totalAmount, totalCount, redPacketType);
+            //创建红包记录
+            redPacket = createRedPacket(senderId, request, body, totalAmount, totalCount, redPacketType);
 
-        //记录余额变更日志
-        createBalanceLog(senderId, totalAmount.negate(), BalanceLogType.SEND_RED_PACKET, redPacket.getRedPacketId());
+            //记录余额变更日志
+            createBalanceLog(senderId, totalAmount.negate(), BalanceLogType.SEND_RED_PACKET, redPacket.getRedPacketId());
 
-        //发送红包消息
-        SendRedPacketResponse response = sendRedPacketMessage(request, redPacket);
+            //预拆金额并初始化Redis抢红包数据
+            initializeRedPacketToRedis(redPacket, redPacketType);
+            redisInitialized = true;
 
-        //设置红包剩余个数到Redis
-        setRedPacketCountToRedis(redPacket.getRedPacketId(), totalCount);
+            //发送红包消息
+            SendRedPacketResponse response = sendRedPacketMessage(request, redPacket);
 
-        return response;
+            return response;
+        } catch (Exception e) {
+            if (redisInitialized && redPacket != null) {
+                clearRedPacketRedis(redPacket.getRedPacketId());
+            }
+            throw e;
+        }
     }
 
     /**
-     * 将红包剩余个数设置到   Redis
-     *
-     * @param redPacketId 红包ID
-     * @param totalCount  红包总个数
+     * 将预拆红包金额初始化到Redis
      */
-    private void setRedPacketCountToRedis(Long redPacketId, int totalCount) {
-        String redisKey = RedPacketConstants.RED_PACKET_KEY_PREFIX.getValue() + redPacketId;
-        redisTemplate.opsForValue().set(redisKey, totalCount, Duration.ofHours(RedPacketConstants.RED_PACKET_EXPIRE_HOURS.getIntValue()));
+    private void initializeRedPacketToRedis(RedPacket redPacket, int redPacketType) {
+        Long redPacketId = redPacket.getRedPacketId();
+        String amountKey = RedPacketConstants.RED_PACKET_AMOUNT_KEY_PREFIX.getValue() + redPacketId;
+        String userKey = RedPacketConstants.RED_PACKET_USER_KEY_PREFIX.getValue() + redPacketId;
+        String expireMarkerKey = RedPacketConstants.RED_PACKET_KEY_PREFIX.getValue() + redPacketId;
+        Duration expireDuration = Duration.ofHours(RedPacketConstants.RED_PACKET_EXPIRE_HOURS.getIntValue());
+
+        List<String> amounts = splitRedPacketAmounts(redPacket.getTotalAmount(), redPacket.getTotalCount(), redPacketType);
+        stringRedisTemplate.delete(amountKey);
+        stringRedisTemplate.delete(userKey);
+        stringRedisTemplate.opsForList().rightPushAll(amountKey, amounts);
+        stringRedisTemplate.opsForValue().set(expireMarkerKey, String.valueOf(redPacket.getTotalCount()), expireDuration);
+        stringRedisTemplate.expire(amountKey, expireDuration);
+        stringRedisTemplate.expire(userKey, expireDuration);
+    }
+
+    private void clearRedPacketRedis(Long redPacketId) {
+        stringRedisTemplate.delete(RedPacketConstants.RED_PACKET_AMOUNT_KEY_PREFIX.getValue() + redPacketId);
+        stringRedisTemplate.delete(RedPacketConstants.RED_PACKET_USER_KEY_PREFIX.getValue() + redPacketId);
+        stringRedisTemplate.delete(RedPacketConstants.RED_PACKET_KEY_PREFIX.getValue() + redPacketId);
+    }
+
+    private List<String> splitRedPacketAmounts(BigDecimal totalAmount, int totalCount, int redPacketType) {
+        if (RedPacketConstants.RED_PACKET_TYPE_NORMAL.getIntValue().equals(redPacketType)) {
+            return splitNormalRedPacketAmounts(totalAmount, totalCount);
+        }
+        return splitRandomRedPacketAmounts(totalAmount, totalCount);
+    }
+
+    private List<String> splitNormalRedPacketAmounts(BigDecimal totalAmount, int totalCount) {
+        List<String> amounts = new ArrayList<>(totalCount);
+        BigDecimal averageAmount = totalAmount.divide(new BigDecimal(totalCount),
+                RedPacketConstants.AMOUNT_SCALE.getDivideScale(), RoundingMode.DOWN);
+        BigDecimal usedAmount = BigDecimal.ZERO;
+        for (int i = 1; i < totalCount; i++) {
+            amounts.add(averageAmount.toPlainString());
+            usedAmount = usedAmount.add(averageAmount);
+        }
+        amounts.add(totalAmount.subtract(usedAmount).setScale(RedPacketConstants.AMOUNT_SCALE.getDivideScale(), RoundingMode.DOWN).toPlainString());
+        return amounts;
+    }
+
+    private List<String> splitRandomRedPacketAmounts(BigDecimal totalAmount, int totalCount) {
+        List<String> amounts = new ArrayList<>(totalCount);
+        BigDecimal remainingAmount = totalAmount;
+        int remainingCount = totalCount;
+        BigDecimal minAmount = RedPacketConstants.MIN_AMOUNT.getBigDecimalValue();
+
+        while (remainingCount > 1) {
+            BigDecimal maxAmount = remainingAmount
+                    .divide(new BigDecimal(remainingCount), RedPacketConstants.AMOUNT_SCALE.getDivideScale(), RoundingMode.DOWN)
+                    .multiply(RedPacketConstants.RANDOM_MULTIPLIER.getBigDecimalValue());
+            BigDecimal maxAllowed = remainingAmount.subtract(minAmount.multiply(new BigDecimal(remainingCount - 1)));
+            if (maxAmount.compareTo(maxAllowed) > 0) {
+                maxAmount = maxAllowed;
+            }
+            BigDecimal amount = generateRandomAmount(minAmount, maxAmount);
+            amounts.add(amount.toPlainString());
+            remainingAmount = remainingAmount.subtract(amount);
+            remainingCount--;
+        }
+
+        amounts.add(remainingAmount.setScale(RedPacketConstants.AMOUNT_SCALE.getDivideScale(), RoundingMode.DOWN).toPlainString());
+        return amounts;
     }
 
     /**
@@ -143,7 +231,8 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
                 .setRemainingAmount(totalAmount)
                 .setRemainingCount(totalCount)
                 .setStatus(RedPacketStatus.UNCLAIMED.getStatus())
-                .setCreatedAt(LocalDateTime.now());
+                .setCreatedAt(LocalDateTime.now())
+                .setExpireAt(LocalDateTime.now().plusHours(RedPacketConstants.RED_PACKET_EXPIRE_HOURS.getIntValue()));
 
         this.save(redPacket);
         return redPacket;
@@ -156,16 +245,10 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
      * @param amount      扣除金额
      * @throws ServiceException 扣减余额失败
      */
-    private void deductUserBalance(UserBalance userBalance, BigDecimal amount) throws ServiceException {
-        BigDecimal newBalance = userBalance.getBalance().subtract(amount);
-        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new ServiceException("余额不足");
-        }
-
-        userBalance.setBalance(newBalance);
-        int updateCount = userBalanceMapper.updateById(userBalance);
+    private void deductUserBalance(Long userId, BigDecimal amount) throws ServiceException {
+        int updateCount = userBalanceMapper.deductBalance(userId, amount);
         if (updateCount != 1) {
-            throw new ServiceException("余额扣减失败");
+            throw new ServiceException("余额不足或扣减失败");
         }
     }
 
@@ -247,17 +330,55 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
 
     @Override
     public void handleExpireRedPacket(Long redPacketId) {
-        RedPacket redPacket = getRedPacketById(redPacketId);
+        Boolean refunded = transactionTemplate.execute(status -> refundExpiredRedPacket(redPacketId));
+        if (Boolean.TRUE.equals(refunded)) {
+            clearRedPacketRedis(redPacketId);
+        }
+    }
 
-        if (redPacket == null || !RedPacketStatus.UNCLAIMED.equals(redPacket.getStatus())) {
-            log.info("红包不存在、已被领取完成或过期，红包ID: {}", redPacketId);
-            return;
+    @Scheduled(fixedDelayString = "${red-packet.expire-scan-fixed-delay:60000}")
+    public void scanExpiredRedPackets() {
+        List<RedPacket> expiredRedPackets = baseMapper.selectExpiredUnclaimed(
+                LocalDateTime.now(),
+                RedPacketStatus.UNCLAIMED.getStatus(),
+                expireScanLimit
+        );
+        for (RedPacket redPacket : expiredRedPackets) {
+            try {
+                handleExpireRedPacket(redPacket.getRedPacketId());
+            } catch (Exception e) {
+                log.error("扫描过期红包退款失败，红包ID: {}", redPacket.getRedPacketId(), e);
+            }
+        }
+    }
+
+    private Boolean refundExpiredRedPacket(Long redPacketId) {
+        int locked = baseMapper.markRefunding(
+                redPacketId,
+                LocalDateTime.now(),
+                RedPacketStatus.UNCLAIMED.getStatus(),
+                RedPacketStatus.REFUNDING.getStatus()
+        );
+        if (locked != 1) {
+            log.info("红包无需退款或已被其他线程处理，红包ID: {}", redPacketId);
+            return false;
         }
 
+        RedPacket redPacket = getRedPacketById(redPacketId);
         BigDecimal remainingAmount = redPacket.getRemainingAmount();
         if (remainingAmount.compareTo(BigDecimal.ZERO) > 0) {
             refundRemainingAmount(redPacket);
         }
+
+        int updated = baseMapper.markRefunded(
+                redPacketId,
+                RedPacketStatus.REFUNDING.getStatus(),
+                RedPacketStatus.EXPIRED.getStatus()
+        );
+        if (updated != 1) {
+            throw new ServiceException("更新红包过期状态失败");
+        }
+        return true;
     }
 
     /**
@@ -280,21 +401,11 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
         Long senderId = redPacket.getSenderId();
         BigDecimal remainingAmount = redPacket.getRemainingAmount();
 
-        UserBalance userBalance = userBalanceMapper.selectById(senderId);
-        if (userBalance != null) {
-            userBalance.setBalance(userBalance.getBalance().add(remainingAmount));
-            int updateCount = userBalanceMapper.updateById(userBalance);
-            if (updateCount != 1) {
-                throw new ServiceException("退还余额失败");
-            }
-
-            // 记录余额变更日志
-            createBalanceLog(senderId, remainingAmount, BalanceLogType.REFUND_RED_PACKET, redPacket.getRedPacketId());
+        int updateCount = userBalanceMapper.increaseBalance(senderId, remainingAmount);
+        if (updateCount != 1) {
+            throw new ServiceException("退还余额失败");
         }
-
-        // 更新红包状态为已过期
-        redPacket.setStatus(RedPacketStatus.EXPIRED.getStatus());
-        this.updateById(redPacket);
+        createBalanceLog(senderId, remainingAmount, BalanceLogType.REFUND_RED_PACKET, redPacket.getRedPacketId());
     }
 
 
@@ -339,6 +450,16 @@ public class RedPacketServiceImpl extends ServiceImpl<RedPacketMapper, RedPacket
      */
     private Long generateId() {
         return snowflake.nextId();
+    }
+
+    private BigDecimal generateRandomAmount(BigDecimal min, BigDecimal max) {
+        if (max.compareTo(min) <= 0) {
+            return min;
+        }
+        BigDecimal range = max.subtract(min);
+        BigDecimal randomInRange = range.multiply(BigDecimal.valueOf(Math.random()));
+        BigDecimal randomAmount = min.add(randomInRange).setScale(RedPacketConstants.AMOUNT_SCALE.getDivideScale(), RoundingMode.DOWN);
+        return randomAmount.compareTo(min) < 0 ? min : randomAmount;
     }
 }
 

@@ -6,7 +6,8 @@ package com.lou.messagingservice.constants;
 public enum RedPacketStatus {
     UNCLAIMED(1, "未领取完"),
     CLAIMED(2, "已领取完"),
-    EXPIRED(3, "已过期");
+    EXPIRED(3, "已过期"),
+    REFUNDING(4, "退款处理中");
 
     private final int status;
     private final String description;
