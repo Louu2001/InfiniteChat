@@ -16,3 +16,9 @@ server:
 netty:
   name: NettyService
   port: 9000
+
+ack:
+  retry:
+    timeout-ms: 5000
+    scan-interval-ms: 5000
+    max-count: 3

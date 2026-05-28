@@ -23,6 +23,8 @@ import com.lou.contactservice.data.ModifyApply.ModifyApplyRequest;
 import com.lou.contactservice.data.ModifyApply.ModifyApplyResponse;
 import com.lou.contactservice.data.SearchUser.SearchUserRequest;
 import com.lou.contactservice.data.SearchUser.SearchUserResponse;
+import com.lou.contactservice.data.SetAdmin.SetGroupAdminRequest;
+import com.lou.contactservice.data.SetAdmin.SetGroupAdminResponse;
 import com.lou.contactservice.data.UnreadApply.UnreadApplyRequest;
 import com.lou.contactservice.data.UnreadApply.UnreadApplyResponse;
 import com.lou.contactservice.data.inviteGroup.InviteGroupRequest;
@@ -59,6 +61,9 @@ public class ContactController {
 
     @Autowired
     private GetGroupMembersService getGroupMembersService;
+
+    @Autowired
+    private GroupAdminService groupAdminService;
 
 //    @GetMapping("/user")
 //    public Result<UserResponse> getUser() {
@@ -163,6 +168,12 @@ public class ContactController {
     public Result<GroupMembersResponse> getGroupMembers(@Valid GroupMembersRequest request) {
         GroupMembersResponse response = getGroupMembersService.getGroupMembers(request);
 
+        return Result.OK(response);
+    }
+
+    @PostMapping("/group/setAdmin")
+    public Result<SetGroupAdminResponse> setGroupAdmin(@Valid @RequestBody SetGroupAdminRequest request) {
+        SetGroupAdminResponse response = groupAdminService.setGroupAdmin(request);
         return Result.OK(response);
     }
 

@@ -19,6 +19,8 @@ import lombok.experimental.Accessors;
 public class MessageDTO {
     private Integer type;
 
+    private String msgUuid;
+
     private Object data;
 
 }

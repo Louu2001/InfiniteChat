@@ -30,6 +30,8 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
 
     private StringRedisTemplate redisTemplate;
 
+    private AckMessageManager ackMessageManager;
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
         log.info("服务端收到了消息:{}", msg.text());
@@ -44,10 +46,13 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
         switch (messageType) {
             case ACK:
                 processACK(messageDTO);
+                break;
             case LOG_OUT:
                 processLogOut(ctx, messageDTO);
+                break;
             case HEART_BEAT:
                 processHeartBeat(ctx, messageDTO);
+                break;
             default:
                 processIllegal(messageDTO);
         }
@@ -55,9 +60,14 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
 
     private void processACK(MessageDTO msg) {
         //处理客户端成功返回的数据
-        AckData ackData = JSONUtil.toBean(msg.getData().toString(), AckData.class);
-        log.info("ackData:{}", ackData);
-        log.info("推送消息成功!");
+        String ackId = msg.getMsgUuid();
+        AckData ackData = null;
+        if (ackId == null && msg.getData() != null) {
+            ackData = JSONUtil.toBean(msg.getData().toString(), AckData.class);
+            ackId = ackData.getMsgUuid();
+        }
+        boolean acked = ackMessageManager.ack(ackId);
+        log.info("ackId:{}, ackData:{}, acked:{}", ackId, ackData, acked);
     }
 
     private void processLogOut(ChannelHandlerContext ctx, MessageDTO msg) {
@@ -65,6 +75,8 @@ public class MessageInboundHandler extends SimpleChannelInboundHandler<TextWebSo
         LogOutData logOutData = JSONUtil.toBean(msg.getData().toString(), LogOutData.class);
         Integer userUuid = logOutData.getUserUuid();
         log.info("请求断开用户{}的连接...", userUuid);
+        int removed = ackMessageManager.removeByUserId(userUuid == null ? null : userUuid.toString());
+        log.info("用户主动登出，清理待ACK消息数量: {}", removed);
         offline(ctx);
         log.info("断开连接成功!");
     }

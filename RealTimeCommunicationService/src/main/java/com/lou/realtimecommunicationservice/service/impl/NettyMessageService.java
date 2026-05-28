@@ -11,16 +11,19 @@ import com.lou.realtimecommunicationservice.data.PushSession.NewSessionNotificat
 import com.lou.realtimecommunicationservice.data.ReceiveMessage.ReceiveMessageRequest;
 import com.lou.realtimecommunicationservice.excption.MessageTypeException;
 import com.lou.realtimecommunicationservice.model.*;
+import com.lou.realtimecommunicationservice.websocket.AckMessageManager;
 import com.lou.realtimecommunicationservice.websocket.ChannelManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import javax.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @ClassName NettyMessageService
@@ -33,6 +36,9 @@ import java.util.List;
 @Slf4j
 public class NettyMessageService {
 
+    @Resource
+    private AckMessageManager ackMessageManager;
+
     public void sendPush(PushTypeEnum pushType, Object data, String receiveUserUuid) {
         if (pushType == null || data == null || receiveUserUuid == null) {
             log.error("推送消息的类型、数据或接受用户UUID为空");
@@ -40,7 +46,8 @@ public class NettyMessageService {
         }
 
         MessageDTO messageDTO = new MessageDTO();
-        messageDTO.setType(pushType.getCode()).setData(data);
+        String ackId = buildAckId(pushType, data, receiveUserUuid);
+        messageDTO.setType(pushType.getCode()).setMsgUuid(ackId).setData(data);
 
         Channel channel = ChannelManager.getChannelByUserId(receiveUserUuid);
         log.info("channel:{}", channel);
@@ -50,13 +57,20 @@ public class NettyMessageService {
                     channel.id(),
                     JSONUtil.toJsonStr(messageDTO));
             //创建 WebSocket 帧
-            TextWebSocketFrame frame = new TextWebSocketFrame(JSONUtil.toJsonStr(messageDTO));
+            String frameText = JSONUtil.toJsonStr(messageDTO);
+            TextWebSocketFrame frame = new TextWebSocketFrame(frameText);
             System.out.println("Frame: " + frame);
             //发送消息并添加监视器来处理发送结果
             channel.writeAndFlush(frame).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (future.isSuccess()) {
+                        ackMessageManager.addPending(new PendingAckMessage()
+                                .setAckId(ackId)
+                                .setReceiveUserId(receiveUserUuid)
+                                .setFrameText(frameText)
+                                .setRetryCount(0)
+                                .setLastSendTime(System.currentTimeMillis()));
                         log.info("消息发送成功:{}", messageDTO);
                     } else {
                         log.error("消息发送失败:{}", future.cause());
@@ -64,6 +78,17 @@ public class NettyMessageService {
                 }
             });
         }
+    }
+
+    private String buildAckId(PushTypeEnum pushType, Object data, String receiveUserUuid) {
+        String businessId = null;
+        if (data instanceof Message) {
+            businessId = ((Message) data).getMessageId();
+        }
+        if (businessId == null || businessId.trim().isEmpty()) {
+            businessId = UUID.randomUUID().toString().replace("-", "");
+        }
+        return pushType.getCode() + ":" + receiveUserUuid + ":" + businessId;
     }
 
     public void sendMessageToUser(ReceiveMessageRequest message) {

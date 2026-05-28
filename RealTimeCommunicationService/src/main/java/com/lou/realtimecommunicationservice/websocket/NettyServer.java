@@ -49,6 +49,9 @@ public class NettyServer {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    @Autowired
+    private AckMessageManager ackMessageManager;
+
     // discoveryClient 服务发现客户端
     private final DiscoveryClient discoveryClient;
 
@@ -86,7 +89,7 @@ public class NettyServer {
                         pipeline.addLast(new HttpObjectAggregator(8192));
                         pipeline.addLast(new WebSocketTokenAuthenHeader());
                         pipeline.addLast(new WebSocketServerProtocolHandler("/api/v1/netty"));
-                        pipeline.addLast(new MessageInboundHandler(redisTemplate));
+                        pipeline.addLast(new MessageInboundHandler(redisTemplate, ackMessageManager));
                     }
                 });
         serverBootstrap.bind(port).sync();
